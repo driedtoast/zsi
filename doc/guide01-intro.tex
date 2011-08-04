@@ -1,0 +1,109 @@
+\newcommand{\XMLSchema}{\citetitle[]{XML Schema Specification}}
+\newcommand{\WSDL}{\citetitle[http://www.w3.org/TR/wsdl]{Web Services 
+Description Language }}
+\newcommand{\SOAP}{\citetitle[http://www.w3.org/TR/soap]{SOAP 1.1 Specification}}
+\newcommand{\WSI}{\citetitle[http://www.ws-i.org/Profiles/BasicProfile-1.1.html]{Basic Profile (WS-Interop)}}
+\newcommand{\URL}{\citetitle[]{Uniform Resource Locator}}
+
+\newcommand{\WPY}{\program{wsdl2py }}
+\newcommand{\WPYDIS}{\program{wsdl2dispatch }}
+\newcommand{\WS}{\emph{Web Service}}
+\newcommand{\XSD}{The XML Schema type library}
+\newcommand{\DOCLIT}{\it{doc/literal}}
+\newcommand{\RPCLIT}{\it{rpc/literal}}
+\newcommand{\RPCENC}{\it{rpc/enc}}
+\chapter{Introduction}
+
+\ZSI{}, the Zolera SOAP Infrastructure, is a Python package that
+provides an implementation of the SOAP specification, as described in
+\SOAP.
+
+This guide demonstrates how to use ZSI to develop \WS{} applications from a
+\WSDL document.
+
+This document is primarily concerned with demonstrating and documenting how to
+use a \WS{} by creating and accessing Python data for the purposes of
+sending and receiving SOAP messages.  Typecodes are used to marshall Python
+datatypes into XML, which can be included in a SOAP Envelope.  The typecodes
+are generated from information provided in the WSDL document, and generally
+describe SOAP and XML Schema data types.  For a low-level treatment of
+typecodes, and a description of SOAP-based processing see the ZSI manual.
+
+\section{Acronyms and Terminology}
+
+\begin{definitions}
+\item{SOAP \newline Usually refering to the content and format of a message ultimately
+sent and received by a \WS{}, see \SOAP{}}
+\item{WSDL \newline A document describing a \WS{}'s interface, see
+\WSDL{}}
+\item{XMLSchema \newline Standard for modeling XML document
+structure.  See \XMLSchema{}}
+\item {schema document \newline a file containing a schema definition.}
+\item {schema (instance)\newline The set of rules or components contained in the
+assemblage of one or more schema documents.} 
+\item{Element Declaration \newline A schema component that associates a
+name with a type definition.  eg. \it{<element name="age" type="xsd:int">}, }
+\item{GED \newline \it{Global Element Declaration}, an element declared at the
+top-level of a schema.}
+\item{ComplexType \newline The parent of all type definitions that can
+specify attributes and children.}
+\item{SimpleType \newline A simple data type like a string or integer.  The
+\XMLSchema{} defines many built-in types. }
+\item{\XSD \newline The \url{http://www.w3.org/2001/XMLSchema} namespace, which
+contains definitions of various primitive types like string and integer, as well
+as a compound type \it{complexType} used to create aggregate types.  
+Conventionally the \emph{xsd} prefix is used to map to this schema.}
+\item{\DOCLIT\newline document style with literal encoding}
+\item{\RPCENC\newline rpc style with specified encoding, not compatible with
+\WSI}
+\item{\RPCLIT\newline rpc style with literal encoding.}
+\end{definitions}
+
+\section{Overview}
+The ZSI \WS tools are for top-Down \WS development, using an existing WSDL
+Document to create client and server applications (see \ref{section:NC}). A \WS, in the context of this document, exposes a WSDL Document describing the
+service's interface, this document is typically available at a published URL (see
+\URL).  The WSDL document defines SOAP bindings for communicating with the 
+service. These bindings will be used to exchange SOAP messages, the contents of
+these messages must adhere to the document structure specified by the schema. The 
+schema is either included in the WSDL Document, imported by it, or represented
+by the available built-in types (such as \emph{xsd:int, xsd:string,
+etc}).\footnote{The xsd prefix refers to namespace \it{"http://www.w3.org/2001/XMLSchema"}}
+
+\subsection{soap bindings}
+The two styles of SOAP bindings are \emph{rpc} and \emph{document}.  The use of
+\it{literal} encoding is encouraged and the recommended way to develop new \WS
+applications (see \WSI).  The SOAP \it{encoded} support is maintained for use
+with older applications, and other SOAP toolkits restricted to \RPCENC development.  A
+\DOCLIT service is typically described as an exchange of documents, while a
+\RPCENC or \RPCLIT service is thought of in terms of remote procedure calls.
+Whether this distinction of purpose is meaningful or useful is debatable.  \ZSI
+supports all three types, but \RPCLIT and \DOCLIT are the focus of ongoing 
+development.
+
+\subsection{python tools}
+\subsubsection{wsdl2py}
+The \WPY script generates python code representing the various components
+defined in a WSDL Document.  Most of the remaining guide focuses on how to use
+this tool and understand its output.
+
+
+\section{Not Covered}
+\label{section:NC}
+\begin{enumerate}
+ \item{How to create a WSDL document}
+ \item {How to write XML Schema}
+ \item {Interoperability}
+ \item{How to use Web Services without WSDL}
+\end{enumerate}
+
+
+
+\section{References}
+\begin{enumerate}
+ \item{Web services development patterns 
+ \url{http://www-128.ibm.com/developerworks/websphere/library/techarticles/0511_flurry/0511_flurry.html}}
+\end{enumerate}
+
+
+

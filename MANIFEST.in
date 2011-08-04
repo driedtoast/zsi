@@ -1,0 +1,13 @@
+include CHANGES Copyright
+recursive-include ZSI *
+recursive-include scripts *
+recursive-include samples WSGI *
+recursive-include test *
+recursive-include doc *
+
+recursive-exclude doc *.tex
+recursive-exclude samples poly.py
+global-exclude *.pyc Makefile
+exclude RELEASE newver.py MANIFEST.in
+prune samples/Echo
+prune interop

@@ -1,0 +1,382 @@
+\chapter{\it{wsdl2py} basics}
+
+The \WPY script is used to generate all the code needed to access a Web Service
+through an exposed WSDL document, usually this description is available at a URL
+which is provided to the script. 
+
+\WPY will generate a client, types, and service module.   From the the WSDL
+SOAP Bindings, the client and service modules are created.  The types module
+contains typecodes for the schema defined by the WSDL.
+
+\section{Modules}
+\label{subsection: Modules}
+
+\subsection{client stub module}
+
+\subsubsection{classes}
+The \it{service item} in the \WSDL definition contains one or more \it{port 
+items}.
+
+\paragraph{locator}
+Defines a factory method for each \it{port item}, and stores the service's
+address.  Use to grab a client(port) to the \WS.
+
+\begin{verbatim}
+# Example Locator
+class WhiteMesaSoapRpcLitTestSvcLocator:
+    SoapTestPortTypeRpc_address = "http://www.whitemesa.net/test-rpc-lit"
+    def getSoapTestPortTypeRpcAddress(self):
+        return WhiteMesaSoapRpcLitTestSvcLocator.SoapTestPortTypeRpc_address
+    def getSoapTestPortTypeRpc(self, url=None, **kw):
+        return Soap11TestRpcLitBindingSOAP(url or WhiteMesaSoapRpcLitTestSvcLocator.SoapTestPortTypeRpc_address, **kw)
+}
+\end{verbatim}
+
+\paragraph{port}
+Each \it{port item} will be represented by a single class definition, grab a
+port through one of the locator's factory methods.
+
+\begin{verbatim}
+loc = WhiteMesaSoapRpcLitTestSvcLocator()
+port = loc.getSoapTestPortTypeRpc(tracefile=sys.stdout)
+\end{verbatim}
+
+
+\paragraph{message} classes that represent the SOAP and XML Schema
+data types. A \it{Message} instance is serialized as a XML instance.  A
+\it{Message} passed as an argument to a \it{port} method is then serialized into
+a SOAP Envelope and transported to the \WS, the client will then wait for an
+expected response, and finally the SOAP response is marshalled back into the
+\it{Message} returned to the user.
+
+\begin{verbatim}
+msg = echoBooleanRequest()
+msg.InputBoolean = True
+rsp = port.echoBoolean(msg)
+\end{verbatim}
+
+\subsection{types module}
+Defines typecodes for all components of all schema specified by the target WSDL
+Document (not including built-in types).  Each schema component declared at the
+top-level, the immediate children of the \it{schema} tag, are global in scope
+and by importing the "types" module an application has access to the GEDs and
+global type definitions either directly or with the unique  
+\it{(namespace,name)} combination thru convenience functions.
+
+\subsubsection{classes}
+\paragraph{Global Type Definition}
+\begin{verbatim}
+class ns1:
+    ..
+    ..
+    class HelpRequest_Def(ZSI.TCcompound.ComplexType, TypeDefinition):
+        schema = "http://webservices.amazon.com/AWSECommerceService/2006-11-14"
+        type = (schema, "HelpRequest")
+        def __init__(self, pname, ofwhat=(), attributes=None, extend=False, restrict=False, **kw):
+            ..
+\end{verbatim}
+\par
+
+\paragraph{Global Element Declaration}
+\begin{verbatim}
+class ns1:
+    ..
+    ..
+    class Help_Dec(ZSI.TCcompound.ComplexType, ElementDeclaration):
+        literal = "Help"
+        schema = "http://webservices.amazon.com/AWSECommerceService/2006-11-14"
+        def __init__(self, **kw):
+            ..
+\end{verbatim}
+\par
+\subsubsection{helper functions}
+\paragraph{Global Type Definition}
+\begin{verbatim}
+    klass = ZSI.schema.GTD(\
+        "http://webservices.amazon.com/AWSECommerceService/2006-11-14", 
+        "HelpRequest")
+    typecode = klass("Help")
+\end{verbatim}
+\par
+\paragraph{Global Element Declaration}
+\begin{verbatim}
+    typecode = ZSI.schema.GED(\
+        "http://webservices.amazon.com/AWSECommerceService/2006-11-14", 
+        "Help")
+\end{verbatim}
+\par
+
+
+Each module level class defintion represents a unique namespace, they're simply
+wrappers of individual namespaces.  In the example above, the two inner classes
+of \class{ns1} are the typecode representations of a global {\it type
+definition} {\it \bfseries HelpRequest_Def}, and a global {\it element
+declaration} {\it \bfseries Help_Dec}.  In most cases a \class{TypeCode}
+instance represents either a global or local element declaration.
+
+In the example \function{GED} returns a \class{Help_Dec} instance
+while \function{GTD} returns the class definition \class{HelpRequest_Def}.  Why
+this asymmetry?  
+The element name is serialized as the XML tag name, while the type definition
+describes the contents (children, text node).  
+
+In the generated code an element declaration either defines all its content in
+its contructor or it subclasses a global type definition, which is another
+generated class.
+
+
+\subsection{service module}
+skeleton class, normally subclassed and invoked by implementation code.  The
+skeleton defines a callback method for each operation defined in the SOAP
+\it{Binding}.  These methods marshal/unmarshall XML into python types.
+
+\subsubsection{example: DateService}
+\paragraph{server skeleton code}
+\begin{verbatim}
+class simple_Date_Service(ServiceSOAPBinding):
+    ..
+    ..
+    def soap_getCurrentDate(self, ps):
+        self.request = ps.Parse(getCurrentDateRequest.typecode)
+        return getCurrentDateResponse()
+
+    soapAction['urn:DateService.wsdl#getCurrentDate'] = 'soap_getCurrentDate'
+    root[(getCurrentDateRequest.typecode.nspname,getCurrentDateRequest.typecode.pname)] = 'soap_getCurrentDate'
+
+\end{verbatim}
+\paragraph{server implementation code}
+\begin{verbatim}
+DS = simple_Date_Service
+class Service(DS):
+    def soap_getCurrentDate(self, ps):
+        response = DS.soap_getCurrentDate(self, ps)
+        response.Today = today = response.new_today()
+        self.request.Input
+        dt = time.localtime(time.time())
+        today.Year = dt[0]
+        today.Month = dt[1]
+        today.Day = dt[2]
+        today.Hour = dt[3]
+        today.Minute = dt[4]
+        today.Second = dt[5]
+        today.Weekday = dt[6]
+        today.DayOfYear = dt[7]
+        today.Dst = dt[8]
+        return response
+\end{verbatim}
+
+
+\section{Generated TypeCodes}
+The generated inner typecode classes come in two flavors, as mentioned above. 
+{\it element declarations} can be serialized into XML, generally {\it type
+definitions} cannot.\footnote{The \it{pname} can be set to \it{None} when a XML
+tag name is not needed (eg. attributes).}   Basically, the {\it name}
+attribute of an {\it element declaration} is serialized into an XML tag, but
+{\it type definitions} lack this information so they cannot be directly
+serialized into an XML instance.  
+
+Most {\it element declaration}s declare a {\it type} attribute, this must
+reference a {\it type definition}.  Considering the above scenario, a
+generated {\it TypeCode} class representing an {\it element declaration} will
+subclass the generated {\it TypeCode} class representing the {\it type 
+definition}.
+
+\subsection{special handling of instance attributes}
+The attributes discussed below are common to all TypeCodes, for more information
+see the ZSI manual.  I'm reintroducing them to point out certain conventions
+adhered to in the generated code, necessary for reliably dealing with WSDL and
+various messaging patterns and usages.
+
+\subsubsection{pyclass}
+All instances of generated {\it TypeCode} classes will have a {\it pyclass}
+attribute, instances of the {\it pyclass} can be created to store the data
+representing an {\it element declaration}.\footnote{Exceptions include the
+Union TypeCode, may need multiple pyclasses to make it work}. The {\it pyclass}
+itself has a {\it typecode} attribute, which is a reference to
+the {\it TypeCode} instance describing the data, thus making {\it pyclass}
+instances self-describing. 
+
+When parsing an XML instance the data will be marshalled into an instance of the
+class specified in the typecode's {\it pyclass} attribute.
+
+\begin{verbatim}
+    typecode = ZSI.schema.GED(\
+        "http://webservices.amazon.com/AWSECommerceService/2006-11-14", 
+        "Help")
+    msg = typecode.pyclass()
+\end{verbatim}
+\par
+
+\subsubsection{aname}
+The {\it aname} is a {\it TypeCode} instance attribute, its value is a string
+representing  the attribute name used to reference data representing an element
+declartion. The set  of {\it XMLSchema} element names is {\it NCName}, this is
+a superset of ordinary identifiers in {\it python}. Keywords like \it{return}
+and \it{class} are legal NCNames.
+
+\citetitle[http://www.w3.org/TR/REC-xml-names/]{Namespaces in XML}
+
+\begin{verbatim}
+From Namespaces in XML
+	NCName	 ::=	(Letter | '_') (NCNameChar)*
+	NCNameChar	 ::=	Letter | Digit | '.' | '-' | '_' | CombiningChar | Extender
+
+From Python Reference Manual (2.3 Identifiers and keywords)
+	identifier	::=	(letter|"_") (letter | digit | "_")*
+
+Default set of anames
+	ANAME	::=	("_") (letter | digit | "_")*
+\end{verbatim}
+
+\paragraph{transform} {\it NCName} into an {\it ANAME}
+\begin{enumerate}
+\item preprend "_"
+\item character not in set (letter \verb!|! digit \verb!|! "_") change to "_"
+\end{enumerate}
+\par
+
+\subsubsection{Attribute Declarations: attrs_aname}
+The {\it attrs_aname} is a {\it TypeCode} instance attribute, its value is a string representing the
+attribute name used to reference a dictionary, containing data representing 
+attribute declarations.  The keys of this dictionary are the  
+\verb!(namespace,name)! tuples, the value of each key represents the value of
+the attribute.
+
+
+\subsubsection{Mixed Text Content: mixed_aname}
+Its value represents the attribute name used to store text content that some
+\it{ComplexType} definitions allow.
+
+\subsection{Metaclass Magic: pyclass_type}
+\label{subsection:MM}
+The {\it --complexType} flag provides many conveniences to the programmer. This 
+option is tested and reliable, and highly recommended by the authors.
+
+When {\it --complexType} is enabled the \verb!__metaclass__! attribute will be
+set on all generated {\it pyclass}es.  The metaclass will introspect the {\it
+typecode} attribute of {\it pyclass}, and create a set of helper methods for
+each element and attribute declared in the {\it complexType} definition.  This
+option simply adds wrappers for dealing with content, it doesn't modify the
+generation scheme.
+
+Use \it{help} in a python interpreter to view all the properties and methods of
+these typecodes.  Looking at the generated code is not very helpful.
+
+\begin{description}
+\item[Getters/Setters] A getter and setter function is defined for each element
+of a complex type.  The functions are named \verb!get_element_ANAME! and
+\verb!set_element_ANAME! respectively.  In this example, variable \var{msg}
+has functions named \verb!get_element__Options! and \verb!set_element__Options!.
+ In addition to elements, getters and setters are generated for the attributes
+ of a complex type.  For attributes, just the name of the attribute is used in
+ determining the method names, so get_attribute_NAME and set_attribute_NAME are
+ created.
+
+\item[Factory Methods] If an element of a complex type is a complex type itself,
+then a conveniece factory method is created to get an instance of that types
+holder class.  The factory method is named, \verb!newANAME!.
+
+\item[Properties]
+\citetitle[http://www.python.org/download/releases/2.2/descrintro/#property]{Python class properties}
+are created for each element of the complex type.  They are initialized with the
+corresponding getter and setter for that element.  To avoid name collisions the
+properties are named, \verb!PNAME!, where the first letter of the type's pname
+attribute is capitalized.  In our running example, \var{msg} has class
+property, \verb!Options!, which calls functions \verb!get_element__Options! and
+\verb!set_element__Options! under the hood.
+
+\end{description}
+
+\subsubsection{example}
+\paragraph{schema} 
+Taken from the WolframSearch WSDL.
+
+\begin{verbatim}
+<xsd:complexType name='WolframSearchOptions'>
+  <xsd:sequence>
+    <xsd:element name='Query' minOccurs='0' maxOccurs='1' type='xsd:string'/>
+    <xsd:element name='Limit' minOccurs='0' maxOccurs='1' type='xsd:int'/>
+  </xsd:sequence>
+  <xsd:attribute name='timeout' type='xsd:double' />
+</xsd:complexType>
+<xsd:element name='WolframSearch'>
+  <xsd:complexType>
+    <xsd:sequence>
+      <xsd:element name='Options' minOccurs='0' maxOccurs='1' type='ns1:WolframSearchOptions'/>
+    </xsd:sequence>
+  </xsd:complexType>
+</xsd:element>
+\end{verbatim}
+\par
+
+\paragraph{help}(WolframSearchRequest)
+\begin{verbatim}
+Help on WolframSearch_Holder in module WolframSearchService_types object:
+
+class WolframSearch_Holder(__builtin__.object)
+ |  Methods defined here:
+ |  
+ |  __init__(self)
+ |  
+ |  get_element_Options(self)
+ |  
+ |  new_Options(self)
+ |      returns a mutable type
+ |  
+ |  set_element_Options(self, value)
+ |  
+ |  ----------------------------------------------------------------------
+ |  Properties defined here:
+ |  
+ |  Options
+ |      property for element (None,Options), minOccurs="0" maxOccurs="1" nillable="False"
+ |  
+ |      <get> = get_element_Options(self)
+ |  
+ |      <set> = set_element_Options(self, value)
+ |  
+\end{verbatim}
+\par
+
+\paragraph{request}
+\begin{verbatim}
+from WolframSearchService_client import *
+msg = WolframSearchRequest()
+# get an instance of a Options holder class using factory method
+msg.Options = opts = msg.new_Options()
+
+# assign values using the properties or methods
+opts.Query = 'Newton'
+opts.set_element_Limit(10)
+
+# don't forget the attribute
+opts.set_attribute_timeout(1.0)
+
+\end{verbatim}
+\par
+
+\paragraph{invoke}
+\begin{verbatim}
+port = WolframSearchServiceLocator().getWolframSearchmyPortType()
+rsp = port.WolframSearch(msg)
+print 'SearchTime:', rsp.Result.SearchTime
+\end{verbatim}
+\par
+
+\paragraph{XML}
+XML approximation of our WolframSearchRequest instance.
+\begin{verbatim}
+ <WolframSearch>
+   <Options timeout="1.0" xsi:type="tns:WolframSearchOptions">
+     <Query xsi:type="xsd:string">Newton</Query>
+     <Limit xsi:type="xsd:double">10.0</Limit>
+   </Options>
+ </WolframSearch>
+\end{verbatim}
+\par
+
+
+
+
+
+

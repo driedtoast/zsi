@@ -1,0 +1,48 @@
+\chapter{wsdl2py scrpt}
+
+\section{Command Line Flags}
+
+\subsection{General Flags}
+\begin{description}
+\item[-h, ---help] Display the help message and available command line
+flags that can be passed to wsdl2py.
+\item[-f FILE, ---file=FILE] Create bindings for the WSDL which is located at
+the local file path.
+\item[-u URL, ---url=URL] Create bindings for the remote WSDL which is located
+at the provided URL.
+\item[-x, ---schema] Just process a schema (xsd) file and generate the types
+mapping file.
+\item[-d, ---debug] Output verbose debugging messages during code generation.
+\item[-o OUTPUT_DIR, ---output-dir=OUTPUT_DIR] Write generated files to OUTPUT_DIR.
+\end{description}
+
+\subsection{Typecode Extensions (Stable) }
+\begin{description}
+\item[-b, ---complexType (more in section~\label{subsubsection:complexType})]
+Generate convenience functions for complexTypes.  This includes getters,
+setters, factory methods, and properties.  ** Do NOT use with --simple-naming **
+\end{description}
+
+\subsection{Development Extensions (Unstable) }
+\begin{description}
+\item[-a, ---address] WS-Addressing support.  The WS-Addressing schema must be
+included in the corresponding WSDL.
+\item[-w, ---twisted] Generate a twisted.web client.  Dependencies: 
+python\verb!>=!2.4, Twisted\verb!>=!2.0.0, TwistedWeb\verb!>=!0.5.0
+\end{description}
+
+\subsection{Customizations (Unstable) }
+\begin{description}
+\item[-e, ---extended] Do extended code generation.
+\item[-z ANAME, ---aname=ANAME] Use a custom function, ANAME, for attribute name
+creation.
+\item[-t TYPES, ---types=TYPES] Dump the generated type mappings to a file
+named, ``TYPES.py''.
+\item[-s, ---simple-naming] Simplify the generated naming.
+\item[-c CLIENTCLASSSUFFIX, ---clientClassSuffix=CLIENTCLASSSUFFIX] The suffic
+to use for service client class. (default ``SOAP'')
+\item[-m PYCLASSMAPMODULE, ---pyclassMapModule=PYCLASSMAPMODULE] Use the
+existing existing type mapping file to determine the ``pyclass'' objects to be
+used.  The module should contain an attribute, ``mapping'', which is a
+dictionary of form, {schemaTypeName: (moduleName.py, className)}.
+\end{description}

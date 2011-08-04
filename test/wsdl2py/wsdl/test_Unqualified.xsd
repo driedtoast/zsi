@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema targetNamespace="urn:test"
+    xmlns:tns="urn:test"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns="http://www.w3.org/2001/XMLSchema">
+
+      <element name="GlobalElementLocalType">
+          <complexType>
+            <sequence>
+              <element name="Unqualified1">
+                  <complexType/>
+              </element>
+              <element name="Unqualified2" type="xsd:int"/>
+              <element name="Unqualified3" type="tns:GlobalType"/>
+
+              <element name="Unqualified4">
+                  <simpleType>
+                       <restriction base="xsd:string"/>
+                  </simpleType>
+              </element>
+
+            </sequence>
+          </complexType>
+      </element>
+
+      <element name="GlobalElementGlobalType" type="tns:GlobalType"/>
+
+      <complexType name="GlobalType">
+            <sequence>
+              <element name="Unqualified1">
+                  <complexType/>
+              </element>
+              <element name="Unqualified2" type="xsd:int"/>
+            </sequence>
+      </complexType>
+
+</xsd:schema>
